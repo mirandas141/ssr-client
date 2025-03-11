@@ -4,6 +4,7 @@ mod error;
 use crate::cli::Cli;
 use crate::error::Result;
 use cli::Environment;
+use error::Error;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 
@@ -26,18 +27,21 @@ struct Ssr {
     url: String,
 }
 
-async fn get_records(client: &Client, cli: &Cli) -> Result<Vec<Ssr>> {
-    let pattern = &cli.filter.clone().map(|val| val.to_lowercase());
-    let target = cli.target_environment.parse();
+async fn get_records(
+    client: &reqwest::RequestBuilder,
+    target: &(&str, &str),
+    pattern: &Option<String>,
+) -> Result<Vec<Ssr>> {
     let result = client
-        .get(&cli.url)
+        .try_clone()
+        .ok_or_else(|| Error::custom("Unable to clone client"))?
         .query(&[target])
         .send()
         .await?
         .json::<Vec<Ssr>>()
         .await?
         .into_iter()
-        .filter(|record| match pattern {
+        .filter(|record| match &pattern {
             Some(value) => {
                 record.name.to_lowercase().contains(value)
                     || record.description.to_lowercase().contains(value)
@@ -52,9 +56,10 @@ async fn get_records(client: &Client, cli: &Cli) -> Result<Vec<Ssr>> {
 #[tokio::main]
 async fn main() -> Result<()> {
     let cli = Cli::parse_args();
-    let client = Client::new();
-    let response2 = get_records(&client, &cli).await?;
-
+    let client = Client::new().get(&cli.url);
+    let pattern = &cli.filter.clone().map(|val| val.to_lowercase());
+    let target = cli.target_environment.parse();
+    let response2 = get_records(&client, &target, &pattern).await?;
     dbg!(&response2);
 
     Ok(())
