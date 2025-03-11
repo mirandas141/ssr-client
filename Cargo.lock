@@ -956,6 +956,7 @@ dependencies = [
  "clap",
  "derive_more",
  "reqwest",
+ "serde",
  "tokio",
 ]
 
