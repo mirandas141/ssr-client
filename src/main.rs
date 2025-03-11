@@ -39,7 +39,7 @@ struct SsrResult {
     name: String,
     description: String,
     key: String,
-    url: SsrUrl,
+    url: HashMap<String, String>,
 }
 
 impl SsrResult {
@@ -52,38 +52,14 @@ impl SsrResult {
             name: name.into(),
             description: description.into(),
             key: key.into(),
-            url: SsrUrl::new(),
+            url: HashMap::new(),
         }
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Default)]
-struct SsrUrl {
-    dev: Option<String>,
-    qa: Option<String>,
-    uat: Option<String>,
-    prod: Option<String>,
-}
-
-impl SsrUrl {
-    pub fn new() -> Self {
-        SsrUrl {
-            dev: None,
-            qa: None,
-            uat: None,
-            prod: None,
-        }
-    }
-
-    pub fn update(&mut self, target: &str, value: impl Into<String>) {
-        let value = value.into();
-        match target {
-            "dev" => self.dev = Some(value),
-            "qa" => self.qa = Some(value),
-            "uat" => self.uat = Some(value),
-            "prod" => self.prod = Some(value),
-            &_ => unreachable!("Unknown target environment"),
-        }
+impl SsrResult {
+    pub fn update_url(&mut self, target: impl Into<String>, value: impl Into<String>) {
+        let _ = self.url.insert(target.into(), value.into());
     }
 }
 
@@ -133,15 +109,15 @@ async fn main() -> Result<()> {
     for target in tasks {
         for result in target.1 {
             if let Some(r) = results.get_mut(&result.key.clone()) {
-                r.url.update(&target.0, result.url);
+                r.update_url(&target.0, result.url);
             } else {
                 let mut r = SsrResult::new(&result.name, &result.description, &result.key);
-                r.url.update(&target.0, result.url);
+                r.update_url(&target.0, result.url);
                 results.insert(result.key, r);
             }
         }
     }
 
-    dbg!(results);
+    println!("{:#?}", results);
     Ok(())
 }
