@@ -8,7 +8,7 @@ const URL: &str = "https://ssr.xenial.com";
 pub struct Cli {
     #[arg(short = 'e', long = "env")]
     #[arg(default_value = "dev")]
-    pub target_environment: Environment,
+    pub target_environment: Vec<Environment>,
 
     #[arg(short, long)]
     #[arg(default_value = URL)]
