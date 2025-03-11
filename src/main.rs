@@ -1,7 +1,7 @@
 mod cli;
 mod error;
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use crate::cli::Cli;
 use crate::error::Result;
@@ -10,34 +10,18 @@ use error::Error;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 
-impl crate::cli::Environment {
-    pub fn parse(&self) -> (&str, &str) {
-        match self {
-            Environment::Dev => ("env", "dev"),
-            Environment::Qa => ("env", "qa"),
-            Environment::Uat => ("env", "uat"),
-            Environment::Prod => ("env", "prod"),
-        }
-    }
-}
-
-fn env_parse(targets: &Vec<Environment>) -> Vec<(&str, &str)> {
-    if targets.len() == 1 {
+fn env_parse(targets: &Vec<Environment>) -> Vec<(String, String)> {
+    if targets.len() == 0 {
         return vec![
-            ("env", "dev"),
-            ("env", "qa"),
-            ("env", "uat"),
-            ("env", "prod"),
+            ("env".into(), Environment::Dev.to_string()),
+            ("env".into(), Environment::Qa.to_string()),
+            ("env".into(), Environment::Uat.to_string()),
+            ("env".into(), Environment::Prod.to_string()),
         ];
     }
-    let mut results: Vec<(&str, &str)> = Vec::new();
+    let mut results: Vec<(String, String)> = Vec::new();
     for target in targets {
-        results.push(match target {
-            Environment::Dev => ("env", "dev"),
-            Environment::Qa => ("env", "qa"),
-            Environment::Uat => ("env", "uat"),
-            Environment::Prod => ("env", "prod"),
-        });
+        results.push(("env".into(), target.to_string()));
     }
     results
 }
@@ -98,14 +82,14 @@ impl SsrUrl {
             "qa" => self.qa = Some(value),
             "uat" => self.uat = Some(value),
             "prod" => self.prod = Some(value),
-            &_ => (),
+            &_ => unreachable!("Unknown target environment"),
         }
     }
 }
 
 async fn get_records(
     client: &reqwest::RequestBuilder,
-    target: &(&str, &str),
+    target: &(String, String),
     pattern: &Option<String>,
 ) -> Result<Vec<Ssr>> {
     let result = client
@@ -138,37 +122,26 @@ async fn main() -> Result<()> {
     let mut tasks = Vec::with_capacity(targets.len());
 
     for target in targets {
-        tasks.push((target.1, get_records(&client, &target, &pattern).await?));
+        tasks.push((
+            target.1.clone(),
+            get_records(&client, &target, &pattern).await?,
+        ));
     }
-    dbg!(&tasks);
 
     let mut results: HashMap<String, SsrResult> = HashMap::new();
 
     for target in tasks {
         for result in target.1 {
             if let Some(r) = results.get_mut(&result.key.clone()) {
-                r.url.update(target.0, result.url);
-                /*
-                match target.0 {
-                    "dev" => r.url.dev = Some(result.url),
-                    "qa" => r.url.qa = Some(result.url),
-                    "uat" => r.url.uat = Some(result.url),
-                    "prod" => r.url.prod = Some(result.url),
-                    &_ => (),
-                }
-                */
+                r.url.update(&target.0, result.url);
             } else {
                 let mut r = SsrResult::new(&result.name, &result.description, &result.key);
-                r.url.update(target.0, result.url);
+                r.url.update(&target.0, result.url);
                 results.insert(result.key, r);
             }
         }
     }
 
     dbg!(results);
-
-    //let result: Vec<Ssr> = tasks.1.into_iter().flatten().collect();
-
-    //println!("results: {:#?}", &result);
     Ok(())
 }
