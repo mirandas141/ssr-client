@@ -4,11 +4,13 @@ pub type Result<T> = core::result::Result<T, Error>;
 
 #[derive(Debug, From)]
 pub enum Error {
-    Custom(String),
+    //Custom(String),
     #[from]
+    //Reqwest(()),
     Reqwest(reqwest::Error),
 }
 
+/*
 impl Error {
     pub fn custom(val: impl core::fmt::Display) -> Self {
         Self::Custom(val.to_string())
@@ -20,6 +22,7 @@ impl From<&str> for Error {
         Self::Custom(value.to_string())
     }
 }
+*/
 
 impl std::fmt::Display for Error {
     fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> core::fmt::Result {
