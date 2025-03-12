@@ -89,23 +89,38 @@ fn get_records(
 fn main() -> Result<()> {
     let cli = Cli::parse_args();
     let client = Client::new().get(&cli.url);
-    let pattern = &cli.filter.clone().map(|val| val.to_lowercase());
     let targets = env_parse(&cli.target_environment);
-    let mut tasks = Vec::new();
+    let records = retrieve_from(&client, targets, cli.filter)?;
+
+    let results = consolidate_targets(records);
+    println!("{:#?}", results);
+
+    Ok(())
+}
+
+fn retrieve_from(
+    client: &reqwest::blocking::RequestBuilder,
+    targets: Vec<(String, String)>,
+    pattern: Option<String>,
+) -> Result<Vec<(String, Vec<Ssr>)>> {
+    let mut records = Vec::with_capacity(targets.len());
+    let pattern = pattern.map(|val| val.to_lowercase());
 
     for target in targets {
-        let ssr_result = get_records(&client, &target, pattern);
+        let ssr_result = get_records(&client, &target, &pattern);
         match ssr_result {
-            Ok(result) => tasks.push((target.1.clone(), result)),
+            Ok(result) => records.push((target.1.clone(), result)),
             Err(_) => eprintln!("Failed to retrieve ssr records from endpoint!"),
         }
     }
 
-    if tasks.is_empty() {
-        println!("No records found to process");
+    if records.is_empty() {
         return Err(Error::NoRecordsToProcess);
     }
+    Ok(records)
+}
 
+fn consolidate_targets(tasks: Vec<(String, Vec<Ssr>)>) -> Vec<SsrResult> {
     let mut results: HashMap<String, SsrResult> = HashMap::new();
 
     for target in tasks {
@@ -120,6 +135,5 @@ fn main() -> Result<()> {
         }
     }
 
-    println!("{:#?}", results);
-    Ok(())
+    results.into_values().collect()
 }
