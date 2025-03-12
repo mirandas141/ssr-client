@@ -1,3 +1,4 @@
+use crate::error::Error;
 use clap::{Parser, ValueEnum};
 
 const URL: &str = "https://ssr.xenial.com";
@@ -60,6 +61,6 @@ impl TryFrom<String> for Environment {
         if value == "prod" {
             return Ok(Environment::Prod);
         }
-        Err(crate::error::Error::custom("unknown environment"))
+        Err(Error::UnableToCloneClient)
     }
 }

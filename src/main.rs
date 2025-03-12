@@ -4,10 +4,9 @@ mod error;
 use std::collections::HashMap;
 
 use crate::cli::Cli;
-use crate::error::Result;
+use crate::error::{Error, Result};
 use cli::Environment;
-use error::Error;
-use reqwest::Client;
+use reqwest::blocking::Client;
 use serde::{Deserialize, Serialize};
 
 fn env_parse(targets: &Vec<Environment>) -> Vec<(String, String)> {
@@ -63,19 +62,17 @@ impl SsrResult {
     }
 }
 
-async fn get_records(
-    client: &reqwest::RequestBuilder,
+fn get_records(
+    client: &reqwest::blocking::RequestBuilder,
     target: &(String, String),
     pattern: &Option<String>,
 ) -> Result<Vec<Ssr>> {
     let result = client
         .try_clone()
-        .ok_or_else(|| Error::custom("Unable to clone client"))?
+        .ok_or_else(|| Error::UnableToCloneClient)?
         .query(&[target])
-        .send()
-        .await?
-        .json::<Vec<Ssr>>()
-        .await?
+        .send()?
+        .json::<Vec<Ssr>>()?
         .into_iter()
         .filter(|record| match &pattern {
             Some(value) => {
@@ -89,19 +86,24 @@ async fn get_records(
     Ok(result)
 }
 
-#[tokio::main]
-async fn main() -> Result<()> {
+fn main() -> Result<()> {
     let cli = Cli::parse_args();
     let client = Client::new().get(&cli.url);
     let pattern = &cli.filter.clone().map(|val| val.to_lowercase());
     let targets = env_parse(&cli.target_environment);
-    let mut tasks = Vec::with_capacity(targets.len());
+    let mut tasks = Vec::new();
 
     for target in targets {
-        tasks.push((
-            target.1.clone(),
-            get_records(&client, &target, &pattern).await?,
-        ));
+        let ssr_result = get_records(&client, &target, pattern);
+        match ssr_result {
+            Ok(result) => tasks.push((target.1.clone(), result)),
+            Err(_) => eprintln!("Failed to retrieve ssr records from endpoint!"),
+        }
+    }
+
+    if tasks.is_empty() {
+        println!("No records found to process");
+        return Err(Error::NoRecordsToProcess);
     }
 
     let mut results: HashMap<String, SsrResult> = HashMap::new();
