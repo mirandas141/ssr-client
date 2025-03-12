@@ -32,6 +32,22 @@ impl Cli {
     pub fn parse_args() -> Self {
         Cli::parse()
     }
+
+    pub fn get_targets(&self) -> Vec<(String, String)> {
+        if self.target_environment.len() == 0 {
+            return vec![
+                ("env".into(), Environment::Dev.to_string()),
+                ("env".into(), Environment::Qa.to_string()),
+                ("env".into(), Environment::Uat.to_string()),
+                ("env".into(), Environment::Prod.to_string()),
+            ];
+        }
+        let mut results: Vec<(String, String)> = Vec::new();
+        for target in &self.target_environment {
+            results.push(("env".into(), target.to_string()));
+        }
+        results
+    }
 }
 
 impl ToString for Environment {
