@@ -6,17 +6,28 @@ const URL: &str = "https://ssr.xenial.com";
 #[derive(Debug, Parser)]
 #[command(version)]
 #[command(about)]
+#[command(next_line_help = false)]
+#[command(
+    after_help = "Name, description, and key returned by the ssr service will be evaluated for `filter` as a substring. If ommitted then all returned values from the `url` will be parsed and returned
+
+Ommitting `TARGET_ENVIRONMENT` will result in all target environments being retrieved and process
+
+`url` should not contain the target environment option as that will be added at runtime"
+)]
 pub struct Cli {
+    /// Environment to grab values for
     #[arg(short = 'e', long = "env")]
     #[arg(num_args = 0..4)]
     #[arg(value_delimiter = ',')]
+    //#[arg(verbatim_doc_comment)]
     pub target_environment: Vec<Environment>,
 
+    /// Url to retrieve ssr entries from
     #[arg(short, long)]
     #[arg(default_value = URL)]
     pub url: String,
 
-    #[arg(short, long)]
+    /// String to filter results by
     pub filter: Option<String>,
 }
 
