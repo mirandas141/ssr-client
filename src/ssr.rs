@@ -1,6 +1,20 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+pub struct Ssr {
+    target: String,
+    records: Vec<SsrRecord>,
+}
+
+impl Ssr {
+    pub fn new(target: impl Into<String>, records: Vec<SsrRecord>) -> Self {
+        Ssr {
+            target: target.into(),
+            records,
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SsrRecord {
     pub name: String,
@@ -38,16 +52,16 @@ impl SsrResult {
     }
 }
 
-pub fn consolidate_targets(tasks: Vec<(String, Vec<SsrRecord>)>) -> Vec<SsrResult> {
+pub fn consolidate_targets(records: Vec<Ssr>) -> Vec<SsrResult> {
     let mut results: HashMap<String, SsrResult> = HashMap::new();
 
-    for target in tasks {
-        for result in target.1 {
+    for target in records {
+        for result in target.records {
             if let Some(r) = results.get_mut(&result.key.clone()) {
-                r.update_url(&target.0, result.url);
+                r.update_url(&target.target, result.url);
             } else {
                 let mut r = SsrResult::new(&result.name, &result.description, &result.key);
-                r.update_url(&target.0, result.url);
+                r.update_url(&target.target, result.url);
                 results.insert(result.key, r);
             }
         }
