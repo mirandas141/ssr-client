@@ -12,7 +12,11 @@ pub enum Error {
 
 impl std::fmt::Display for Error {
     fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(fmt, "{}", &self)
+        match self {
+            Self::UnableToCloneClient => write!(fmt, "Unable to clone web client"),
+            Self::NoRecordsToProcess => write!(fmt, "No records to process"),
+            Self::Reqwest(e) => write!(fmt, "Unable to process request. {}", e.to_string()),
+        }
     }
 }
 

@@ -37,16 +37,20 @@ fn get_records(
         .send()?
         .json::<Vec<SsrRecord>>()?
         .into_iter()
-        .filter(|record| match &pattern {
-            Some(value) => {
-                record.name.to_lowercase().contains(value)
-                    || record.description.to_lowercase().contains(value)
-                    || record.key.to_lowercase().contains(value)
-            }
-            None => true,
-        })
+        .filter(|record| matches_pattern(&pattern, &record))
         .collect::<Vec<SsrRecord>>();
     Ok(result)
+}
+
+fn matches_pattern(pattern: &Option<String>, record: &SsrRecord) -> bool {
+    match &pattern {
+        Some(value) => {
+            record.name.to_lowercase().contains(value)
+                || record.description.to_lowercase().contains(value)
+                || record.key.to_lowercase().contains(value)
+        }
+        None => true,
+    }
 }
 
 fn retrieve_from(
