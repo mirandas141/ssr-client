@@ -20,7 +20,7 @@ impl SsrRetriever {
         self
     }
 
-    pub fn get(&self, pattern: Option<String>) -> Result<Vec<Ssr>> {
+    pub fn get(&self, pattern: Option<String>) -> Result<Ssr> {
         retrieve_from(&self.client, &self.targets, pattern)
     }
 }
@@ -49,18 +49,18 @@ fn get_records(
     Ok(result)
 }
 
-pub fn retrieve_from(
+fn retrieve_from(
     client: &reqwest::blocking::RequestBuilder,
     targets: &Vec<(String, String)>,
     pattern: Option<String>,
-) -> Result<Vec<Ssr>> {
-    let mut records = Vec::with_capacity(targets.len());
+) -> Result<Ssr> {
+    let mut records = Ssr::new(targets.len());
     let pattern = pattern.map(|val| val.to_lowercase());
 
     for target in targets {
         let ssr_result = get_records(&client, &target, &pattern);
         match ssr_result {
-            Ok(result) => records.push(Ssr::new(target.1.clone(), result)),
+            Ok(result) => records.add_records(target.1.clone(), result),
             Err(Error::Reqwest(e)) => eprintln!("{}", e.to_string()),
             Err(Error::UnableToCloneClient) => eprintln!("Unable to process request"),
             Err(_) => eprintln!("Failed to retrieve ssr records from endpoint!"),

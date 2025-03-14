@@ -9,14 +9,13 @@ use retriever::SsrRetriever;
 
 fn main() -> Result<()> {
     let cli = Cli::parse_args();
-    let mut targets = cli.get_targets();
-    let pattern = cli.filter.map(|val| val.to_lowercase());
+    let pattern = &cli.filter;
     let records = SsrRetriever::new(&cli.url)
-        .add_targets(&mut targets)
-        .get(pattern)?;
+        .add_targets(&mut cli.get_targets())
+        .get(pattern.clone())?
+        .consolidate();
 
-    let results = ssr::consolidate_targets(records);
-    println!("{:#?}", results);
+    println!("{:#?}", records);
 
     Ok(())
 }
