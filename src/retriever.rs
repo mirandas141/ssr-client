@@ -20,52 +20,35 @@ impl SsrRetriever {
         self
     }
 
-    pub fn get(&self, pattern: Option<String>) -> Result<Ssr> {
-        retrieve_from(&self.client, &self.targets, pattern)
+    pub fn get(&self) -> Result<Ssr> {
+        retrieve_from(&self.client, &self.targets)
     }
 }
 
 fn get_records(
     client: &reqwest::blocking::RequestBuilder,
     target: &(String, String),
-    pattern: &Option<String>,
 ) -> Result<Vec<SsrRecord>> {
     let result = client
         .try_clone()
         .ok_or_else(|| Error::UnableToCloneClient)?
         .query(&[target])
         .send()?
-        .json::<Vec<SsrRecord>>()?
-        .into_iter()
-        .filter(|record| matches_pattern(&pattern, &record))
-        .collect::<Vec<SsrRecord>>();
+        .json::<Vec<SsrRecord>>()?;
     Ok(result)
-}
-
-fn matches_pattern(pattern: &Option<String>, record: &SsrRecord) -> bool {
-    match &pattern {
-        Some(value) => {
-            record.name.to_lowercase().contains(value)
-                || record.description.to_lowercase().contains(value)
-                || record.key.to_lowercase().contains(value)
-        }
-        None => true,
-    }
 }
 
 fn retrieve_from(
     client: &reqwest::blocking::RequestBuilder,
     targets: &Vec<(String, String)>,
-    pattern: Option<String>,
 ) -> Result<Ssr> {
     let mut records = Ssr::new(targets.len());
-    let pattern = pattern.map(|val| val.to_lowercase());
 
     for target in targets {
-        let ssr_result = get_records(&client, &target, &pattern);
+        let ssr_result = get_records(client, target);
         match ssr_result {
             Ok(result) => records.add_records(target.1.clone(), result),
-            Err(Error::Reqwest(e)) => eprintln!("{}", e.to_string()),
+            Err(Error::Reqwest(e)) => eprintln!("{}", e),
             Err(Error::UnableToCloneClient) => eprintln!("Unable to process request"),
             Err(_) => eprintln!("Failed to retrieve ssr records from endpoint!"),
         }

@@ -15,7 +15,7 @@ impl std::fmt::Display for Error {
         match self {
             Self::UnableToCloneClient => write!(fmt, "Unable to clone web client"),
             Self::NoRecordsToProcess => write!(fmt, "No records to process"),
-            Self::Reqwest(e) => write!(fmt, "Unable to process request. {}", e.to_string()),
+            Self::Reqwest(e) => write!(fmt, "Unable to process request. {}", e),
         }
     }
 }

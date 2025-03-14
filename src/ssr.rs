@@ -3,12 +3,22 @@ use std::collections::HashMap;
 
 pub struct Ssr {
     records: Vec<SsrRecords>,
+    pattern: Option<String>,
 }
 
 impl Ssr {
     pub fn new(capacity: usize) -> Self {
         Ssr {
             records: Vec::with_capacity(capacity),
+            pattern: None,
+        }
+    }
+
+    pub fn set_pattern(self, pattern: Option<String>) -> Self {
+        let pattern = pattern.map(|val| val.to_lowercase());
+        Ssr {
+            records: self.records,
+            pattern,
         }
     }
 
@@ -25,7 +35,11 @@ impl Ssr {
         let records = self.records;
 
         for target in records {
-            for result in target.records {
+            for result in target
+                .records
+                .into_iter()
+                .filter(|record| matches_pattern(&self.pattern, record))
+            {
                 if let Some(r) = results.get_mut(&result.key.clone()) {
                     r.update_url(&target.target, result.url);
                 } else {
@@ -37,6 +51,17 @@ impl Ssr {
         }
 
         results.into_values().collect()
+    }
+}
+
+fn matches_pattern(pattern: &Option<String>, record: &SsrRecord) -> bool {
+    match &pattern {
+        Some(value) => {
+            record.name.to_lowercase().contains(value)
+                || record.description.to_lowercase().contains(value)
+                || record.key.to_lowercase().contains(value)
+        }
+        None => true,
     }
 }
 

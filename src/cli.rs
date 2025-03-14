@@ -45,7 +45,7 @@ impl Cli {
     }
 
     pub fn get_targets(&self) -> Vec<(String, String)> {
-        if self.target_environment.len() == 0 {
+        if self.target_environment.is_empty() {
             return vec![
                 ("env".into(), Environment::Dev.to_string()),
                 ("env".into(), Environment::Qa.to_string()),
@@ -61,14 +61,15 @@ impl Cli {
     }
 }
 
-impl ToString for Environment {
-    fn to_string(&self) -> String {
-        match self {
-            Environment::Dev => String::from("dev"),
-            Environment::Qa => String::from("qa"),
-            Environment::Uat => String::from("uat"),
-            Environment::Prod => String::from("prod"),
-        }
+impl std::fmt::Display for Environment {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let value: &str = match self {
+            Environment::Dev => "dev",
+            Environment::Qa => "qa",
+            Environment::Uat => "uat",
+            Environment::Prod => "prod",
+        };
+        write!(f, "{}", value)
     }
 }
 
