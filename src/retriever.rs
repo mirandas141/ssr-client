@@ -1,5 +1,29 @@
 use crate::error::{Error, Result};
 use crate::ssr::SsrRecord;
+use reqwest::blocking::{Client, RequestBuilder};
+
+pub struct SsrRetriever {
+    client: RequestBuilder,
+    targets: Vec<(String, String)>,
+}
+
+impl SsrRetriever {
+    pub fn new(url: impl Into<String>) -> Self {
+        SsrRetriever {
+            client: Client::new().get(url.into()),
+            targets: Vec::new(),
+        }
+    }
+
+    pub fn add_targets(mut self, targets: &mut Vec<(String, String)>) -> Self {
+        self.targets.append(targets);
+        self
+    }
+
+    pub fn get(&self, pattern: Option<String>) -> Result<Vec<(String, Vec<SsrRecord>)>> {
+        retrieve_from(&self.client, &self.targets, pattern)
+    }
+}
 
 fn get_records(
     client: &reqwest::blocking::RequestBuilder,
@@ -27,7 +51,7 @@ fn get_records(
 
 pub fn retrieve_from(
     client: &reqwest::blocking::RequestBuilder,
-    targets: Vec<(String, String)>,
+    targets: &Vec<(String, String)>,
     pattern: Option<String>,
 ) -> Result<Vec<(String, Vec<SsrRecord>)>> {
     let mut records = Vec::with_capacity(targets.len());
