@@ -53,9 +53,7 @@ fn retrieve_from(
         let ssr_result = get_records(client, target);
         match ssr_result {
             Ok(result) => records.add_records(target.1.clone(), result),
-            Err(Error::Reqwest(e)) => eprintln!("{}", e),
-            Err(Error::UnableToCloneClient) => eprintln!("Unable to process request"),
-            Err(_) => eprintln!("Failed to retrieve ssr records from endpoint!"),
+            Err(e) => return Err(e),
         }
     }
 

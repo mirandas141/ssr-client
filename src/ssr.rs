@@ -4,3 +4,4 @@ mod ssr;
 
 pub use self::cli::*;
 pub use self::retriever::*;
+pub use self::ssr::*;
