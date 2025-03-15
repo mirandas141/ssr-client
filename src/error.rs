@@ -6,6 +6,7 @@ pub type Result<T> = core::result::Result<T, Error>;
 pub enum Error {
     UnableToCloneClient,
     NoRecordsToProcess,
+    InvalidEnvironmentTarget(String),
     #[from]
     Reqwest(reqwest::Error),
 }
@@ -15,6 +16,9 @@ impl std::fmt::Display for Error {
         match self {
             Self::UnableToCloneClient => write!(fmt, "Unable to clone web client"),
             Self::NoRecordsToProcess => write!(fmt, "No records to process"),
+            Self::InvalidEnvironmentTarget(target) => {
+                write!(fmt, "Invalid target `{}` specified", target)
+            }
             Self::Reqwest(e) => write!(fmt, "Unable to process request. {}", e),
         }
     }

@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use crate::error::Error;
 use clap::{Parser, ValueEnum};
 
@@ -73,22 +75,22 @@ impl std::fmt::Display for Environment {
     }
 }
 
-impl TryFrom<String> for Environment {
-    type Error = crate::error::Error;
+impl FromStr for Environment {
+    type Err = Error;
 
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        if value == "dev" {
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s == "dev" {
             return Ok(Environment::Dev);
         }
-        if value == "qa" {
+        if s == "qa" {
             return Ok(Environment::Qa);
         }
-        if value == "uat" {
+        if s == "uat" {
             return Ok(Environment::Uat);
         }
-        if value == "prod" {
+        if s == "prod" {
             return Ok(Environment::Prod);
         }
-        Err(Error::UnableToCloneClient)
+        Err(Error::InvalidEnvironmentTarget(s.into()))
     }
 }
