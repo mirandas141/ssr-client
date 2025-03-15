@@ -67,7 +67,7 @@ impl SsrRecords {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct SsrRecord {
     pub name: String,
     pub description: String,
@@ -88,7 +88,7 @@ impl SsrRecord {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize)]
 pub struct SsrResult {
     name: String,
     description: String,

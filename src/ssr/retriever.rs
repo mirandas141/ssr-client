@@ -1,6 +1,6 @@
 use super::cli::Environment;
-use super::error::{Error, Result};
-use super::types::{Ssr, SsrRecord};
+use super::ssr::{Ssr, SsrRecord};
+use crate::error::{Error, Result};
 use reqwest::blocking::{Client, RequestBuilder};
 
 pub struct SsrRetriever {
