@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use crate::error::Error;
+use super::error::Error;
 use clap::{Parser, ValueEnum};
 
 const URL: &str = "https://ssr.xenial.com";

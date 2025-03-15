@@ -1,11 +1,6 @@
-mod cli;
-mod error;
-mod retriever;
 mod ssr;
 
-use crate::cli::Cli;
-use crate::error::Result;
-use retriever::SsrRetriever;
+use crate::ssr::{cli::Cli, error::Result, retriever::SsrRetriever};
 
 fn main() -> Result<()> {
     let cli = Cli::parse_args();
