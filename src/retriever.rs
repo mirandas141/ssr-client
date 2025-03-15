@@ -1,3 +1,4 @@
+use crate::cli::Environment;
 use crate::error::{Error, Result};
 use crate::ssr::{Ssr, SsrRecord};
 use reqwest::blocking::{Client, RequestBuilder};
@@ -15,8 +16,12 @@ impl SsrRetriever {
         }
     }
 
-    pub fn add_targets(mut self, targets: &mut Vec<(String, String)>) -> Self {
-        self.targets.append(targets);
+    pub fn add_targets(mut self, targets: &mut [Environment]) -> Self {
+        let mut values = targets
+            .iter_mut()
+            .map(|env| (String::from("env"), env.to_string()))
+            .collect::<Vec<(String, String)>>();
+        self.targets.append(&mut values);
         self
     }
 

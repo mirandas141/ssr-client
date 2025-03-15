@@ -46,18 +46,18 @@ impl Cli {
         Cli::parse()
     }
 
-    pub fn get_targets(&self) -> Vec<(String, String)> {
+    pub fn get_targets(&self) -> Vec<Environment> {
         if self.target_environment.is_empty() {
             return vec![
-                ("env".into(), Environment::Dev.to_string()),
-                ("env".into(), Environment::Qa.to_string()),
-                ("env".into(), Environment::Uat.to_string()),
-                ("env".into(), Environment::Prod.to_string()),
+                Environment::Dev,
+                Environment::Qa,
+                Environment::Uat,
+                Environment::Prod,
             ];
         }
-        let mut results: Vec<(String, String)> = Vec::new();
+        let mut results: Vec<Environment> = Vec::new();
         for target in &self.target_environment {
-            results.push(("env".into(), target.to_string()));
+            results.push(*target);
         }
         results
     }
@@ -92,5 +92,68 @@ impl FromStr for Environment {
             return Ok(Environment::Prod);
         }
         Err(Error::InvalidEnvironmentTarget(s.into()))
+    }
+}
+
+#[cfg(test)]
+mod cli_tests {
+    use super::{Environment::*, *};
+    use rstest::*;
+    use std::error::Error;
+
+    type Result<T> = core::result::Result<T, Box<dyn Error>>;
+
+    #[test]
+    fn should_have_default_url_with_all_environment_targets() -> Result<()> {
+        let result = Cli::try_parse_from(vec!["app"].iter())?;
+
+        assert_eq!("https://ssr.xenial.com", result.url);
+        Ok(())
+    }
+
+    #[test]
+    fn should_have_by_default_all_environment_targets() {
+        let result = Cli::try_parse_from(vec!["app"].iter()).expect("to parse cli with defaults");
+
+        assert_eq!(vec![Dev, Qa, Uat, Prod], result.get_targets());
+    }
+
+    #[rstest]
+    #[case("dev", vec![Dev])]
+    #[case("dev,qa", vec![Dev, Qa])]
+    #[case("dev,qa,uat", vec![Dev, Qa, Uat])]
+    #[case("dev,qa,uat,prod", vec![Dev, Qa, Uat, Prod])]
+    #[case("dev,qa,prod", vec![Dev, Qa, Prod])]
+    #[case("dev,uat,prod", vec![Dev, Uat, Prod])]
+    #[case("uat,prod", vec![Uat, Prod])]
+    fn should_return_target_environments_passed(
+        #[case] params: &str,
+        #[case] expected: Vec<Environment>,
+    ) {
+        let result = Cli::try_parse_from(vec!["app", "-e", params].iter())
+            .expect("environment parameters to parse");
+
+        assert_eq!(expected, result.get_targets());
+    }
+
+    #[rstest]
+    #[case(Dev, "dev")]
+    #[case(Qa, "qa")]
+    #[case(Uat, "uat")]
+    #[case(Prod, "prod")]
+    fn should_convert_environment_to_string(#[case] input: Environment, #[case] expected: String) {
+        assert_eq!(input.to_string(), expected);
+    }
+
+    #[rstest]
+    #[case("dev", Dev)]
+    #[case("qa", Qa)]
+    #[case("uat", Uat)]
+    #[case("prod", Prod)]
+    fn should_convert_string_to_environment_enum(
+        #[case] input: String,
+        #[case] expected: Environment,
+    ) {
+        assert_eq!(input.parse::<Environment>().unwrap(), expected);
     }
 }
