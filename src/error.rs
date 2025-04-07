@@ -14,7 +14,7 @@ pub enum Error {
 impl std::fmt::Display for Error {
     fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
-            Self::UnableToCloneClient => write!(fmt, "Unable to clone web client"),
+            Self::UnableToCloneClient => write!(fmt, "Unable to process URL"),
             Self::NoRecordsToProcess => write!(fmt, "No records to process"),
             Self::InvalidEnvironmentTarget(target) => {
                 write!(fmt, "Invalid target `{}` specified", target)

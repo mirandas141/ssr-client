@@ -117,6 +117,16 @@ impl SsrResult {
     }
 }
 
+impl std::fmt::Display for SsrResult {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} ({})\n{}\n", &self.name, &self.key, &self.description)?;
+        for target in self.url.iter() {
+            write!(f, "{} \t {}\n", target.0, target.1)?;
+        }
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod test_shared {
     use super::*;

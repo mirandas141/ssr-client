@@ -4,7 +4,7 @@ mod ssr;
 use std::process::exit;
 
 use crate::error::Result;
-use crate::ssr::{Cli, SsrResult, SsrRetriever};
+use crate::ssr::{Cli, SsrRetriever};
 
 fn main() {
     let cli = Cli::parse_args();
@@ -17,12 +17,16 @@ fn main() {
     }
 }
 
-fn process(cli: Cli) -> Result<Vec<SsrResult>> {
+fn process(cli: Cli) -> Result<()> {
     let records = SsrRetriever::new(&cli.url)
         .add_targets(&mut cli.get_targets())
         .get()?
         .set_pattern(cli.filter)
         .consolidate();
 
-    Ok(records)
+    for record in records.iter() {
+        println!("{}", record);
+    }
+
+    std::process::exit(0)
 }
