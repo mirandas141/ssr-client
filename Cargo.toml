@@ -1,0 +1,17 @@
+[package]
+name = "ssr-client"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+clap = { version = "4.5.32", features = ["derive"] }
+derive_more = { version = "2.0.1", features = ["from"] }
+reqwest = { version = "0.12.12", features = ["blocking", "json"] }
+rstest = "0.25.0"
+serde = { version = "1.0.219", features = ["derive"] }
+tokio = { version = "1.44.0", features = ["full"] }
+
+[profile.release]
+codegen-units = 1 # Enable extra optimisation of code paths
+lto = "fat" # enable link time optimisation
+opt-level = "z" # optimize for size
