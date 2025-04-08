@@ -33,7 +33,7 @@ pub struct Cli {
     pub filter: Option<String>,
 }
 
-#[derive(ValueEnum, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(ValueEnum, Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, Hash)]
 pub enum Environment {
     Dev,
     Qa,

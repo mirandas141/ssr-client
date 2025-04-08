@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+use super::Environment;
+
 pub struct Ssr {
     records: Vec<SsrRecords>,
     pattern: Option<String>,
@@ -22,7 +24,7 @@ impl Ssr {
         }
     }
 
-    pub fn add_records(&mut self, target: impl Into<String>, records: Vec<SsrRecord>) {
+    pub fn add_records(&mut self, target: Environment, records: Vec<SsrRecord>) {
         self.records.push(SsrRecords::new(target, records));
     }
 
@@ -40,10 +42,10 @@ impl Ssr {
                 .filter(|r| r.matches_pattern(&self.pattern))
             {
                 if let Some(r) = results.get_mut(&record.key.clone()) {
-                    r.update_url(&target.target, record.url);
+                    r.update_url(target.target, record.url);
                 } else {
                     let mut r = SsrResult::new(&record.name, &record.description, &record.key);
-                    r.update_url(&target.target, record.url);
+                    r.update_url(target.target, record.url);
                     results.insert(record.key, r);
                 }
             }
@@ -54,12 +56,12 @@ impl Ssr {
 }
 
 struct SsrRecords {
-    target: String,
+    target: Environment,
     records: Vec<SsrRecord>,
 }
 
 impl SsrRecords {
-    fn new(target: impl Into<String>, records: Vec<SsrRecord>) -> Self {
+    fn new(target: Environment, records: Vec<SsrRecord>) -> Self {
         SsrRecords {
             target: target.into(),
             records,
@@ -93,7 +95,7 @@ pub struct SsrResult {
     name: String,
     description: String,
     key: String,
-    url: HashMap<String, String>,
+    url: Vec<(Environment, Option<String>)>,
 }
 
 impl SsrResult {
@@ -102,18 +104,34 @@ impl SsrResult {
         description: impl Into<String>,
         key: impl Into<String>,
     ) -> Self {
+        let mut targets = Vec::new();
+        targets.push((Environment::Dev, None));
+        targets.push((Environment::Qa, None));
+        targets.push((Environment::Uat, None));
+        targets.push((Environment::Prod, None));
         SsrResult {
             name: name.into(),
             description: description.into(),
             key: key.into(),
-            url: HashMap::new(),
+            url: targets,
+        }
+    }
+}
+
+impl Environment {
+    fn to_usize(&self) -> usize {
+        match self {
+            Environment::Dev => 0,
+            Environment::Qa => 1,
+            Environment::Uat => 2,
+            Environment::Prod => 3,
         }
     }
 }
 
 impl SsrResult {
-    pub fn update_url(&mut self, target: impl Into<String>, value: impl Into<String>) {
-        let _ = self.url.insert(target.into(), value.into());
+    pub fn update_url(&mut self, target: Environment, value: impl Into<String>) {
+        self.url[target.to_usize()] = (target, Some(value.into()))
     }
 }
 
@@ -121,7 +139,9 @@ impl std::fmt::Display for SsrResult {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{} ({})\n{}\n", &self.name, &self.key, &self.description)?;
         for target in self.url.iter() {
-            write!(f, "{} \t {}\n", target.0, target.1)?;
+            if let Some(value) = &target.1 {
+                write!(f, "{} \t {}\n", target.0, value)?
+            }
         }
         Ok(())
     }
@@ -150,7 +170,7 @@ mod test_shared {
 
 #[cfg(test)]
 mod tests {
-    use crate::cli::Environment;
+    use crate::ssr::cli::Environment;
 
     use super::*;
     use rstest::*;
@@ -175,7 +195,7 @@ mod tests {
         let record = SsrRecord::new(name, description, key, url);
         records.push(record);
         let mut sut = Ssr::new(1).set_pattern(pattern);
-        sut.add_records(Environment::Dev.to_string(), records);
+        sut.add_records(Environment::Dev, records);
 
         assert_eq!(sut.consolidate().len(), expected_count);
     }
@@ -185,23 +205,25 @@ mod tests {
         let mut records = Vec::new();
         records.push(SsrRecord::new("name", "description", "key", "https://url1"));
         let mut sut = Ssr::new(2).set_pattern(None);
-        sut.add_records(Environment::Dev.to_string(), records);
+        sut.add_records(Environment::Dev, records);
         let mut records = Vec::new();
         records.push(SsrRecord::new("name", "description", "key", "https://url2"));
-        sut.add_records(&Environment::Qa.to_string(), records);
+        sut.add_records(Environment::Uat, records);
 
         let actual = sut.consolidate();
 
         assert_eq!(actual.len(), 1);
-        assert_eq!(actual[0].url.len(), 2);
+        assert_eq!(actual[0].url.len(), 4);
         assert_eq!(
-            actual[0].url.get(&Environment::Dev.to_string()).unwrap(),
-            "https://url1"
+            actual[0].url[Environment::Dev.to_usize()].1,
+            Some("https://url1".into())
         );
+        assert_eq!(actual[0].url[Environment::Qa.to_usize()].1, None);
         assert_eq!(
-            actual[0].url.get(&Environment::Qa.to_string()).unwrap(),
-            "https://url2"
+            actual[0].url[Environment::Uat.to_usize()].1,
+            Some("https://url2".into())
         );
+        assert_eq!(actual[0].url[Environment::Prod.to_usize()].1, None);
     }
 
     #[test]
@@ -210,12 +232,18 @@ mod tests {
         records.push(SsrRecord::new("name", "description", "key", "https://url1"));
         records.push(SsrRecord::new("name", "description", "key", "https://url2"));
         let mut sut = Ssr::new(2).set_pattern(None);
-        sut.add_records(Environment::Dev.to_string(), records);
+        sut.add_records(Environment::Dev, records);
 
         let actual = sut.consolidate();
 
         assert_eq!(actual.len(), 1);
-        assert_eq!(actual[0].url.len(), 1);
-        assert_eq!(actual[0].url.get("dev").unwrap(), "https://url2");
+        assert_eq!(actual[0].url.len(), 4);
+        assert_eq!(
+            actual[0].url[Environment::Dev.to_usize()].1,
+            Some("https://url2".into())
+        );
+        assert_eq!(actual[0].url[Environment::Qa.to_usize()].1, None);
+        assert_eq!(actual[0].url[Environment::Uat.to_usize()].1, None);
+        assert_eq!(actual[0].url[Environment::Prod.to_usize()].1, None);
     }
 }

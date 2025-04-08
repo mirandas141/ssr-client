@@ -5,7 +5,7 @@ use reqwest::blocking::{Client, RequestBuilder};
 
 pub struct SsrRetriever {
     client: RequestBuilder,
-    targets: Vec<(String, String)>,
+    targets: Vec<(String, Environment)>,
 }
 
 impl SsrRetriever {
@@ -19,8 +19,8 @@ impl SsrRetriever {
     pub fn add_targets(mut self, targets: &mut [Environment]) -> Self {
         let mut values = targets
             .iter_mut()
-            .map(|env| (String::from("env"), env.to_string()))
-            .collect::<Vec<(String, String)>>();
+            .map(|env| (String::from("env"), env.clone()))
+            .collect::<Vec<(String, Environment)>>();
         self.targets.append(&mut values);
         self
     }
@@ -32,12 +32,12 @@ impl SsrRetriever {
 
 fn get_records(
     client: &reqwest::blocking::RequestBuilder,
-    target: &(String, String),
+    target: &(String, Environment),
 ) -> Result<Vec<SsrRecord>> {
     let result = client
         .try_clone()
         .ok_or_else(|| Error::UnableToCloneClient)?
-        .query(&[target])
+        .query(&[(target.0.clone(), target.1.to_string())])
         .send()?
         .json::<Vec<SsrRecord>>()?;
     Ok(result)
@@ -45,14 +45,14 @@ fn get_records(
 
 fn retrieve_from(
     client: &reqwest::blocking::RequestBuilder,
-    targets: &Vec<(String, String)>,
+    targets: &Vec<(String, Environment)>,
 ) -> Result<Ssr> {
     let mut records = Ssr::new(targets.len());
 
     for target in targets {
         let ssr_result = get_records(client, target);
         match ssr_result {
-            Ok(result) => records.add_records(target.1.clone(), result),
+            Ok(result) => records.add_records(target.1, result),
             Err(e) => return Err(e),
         }
     }
